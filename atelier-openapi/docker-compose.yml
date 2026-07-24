@@ -1,7 +1,8 @@
-# Mock de votre API, servi directement depuis votre contrat.
+# Mock de votre API, servi directement depuis votre contrat, avec sa documentation.
 #
 # Démarrer :  docker compose up
 # Puis :      http://localhost:4010  (Bruno, curl, navigateur...)
+#             http://localhost:4011  (votre contrat, rendu lisible)
 #
 # Prism surveille votre contrat : modifiez openapi.yaml, rejouez la requête,
 # le mock a déjà changé. Pas besoin de redémarrer.
@@ -22,3 +23,14 @@ services:
       - .:/tmp:ro
     ports:
       - "4010:4010"
+
+  docs:
+    image: swaggerapi/swagger-ui:v5.32.11
+    environment:
+      # le fichier est cherché dans le conteneur, à ce chemin exact
+      SWAGGER_JSON: /openapi/openapi.yaml
+    volumes:
+      # même montage de DOSSIER que le mock, pour la même raison
+      - .:/openapi:ro
+    ports:
+      - "4011:8080"

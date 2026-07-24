@@ -27,6 +27,10 @@ curl -X POST http://localhost:4010/auth/login \
 Prism relit `openapi.yaml` à chaque requête : modifiez le contrat, rejouez la requête,
 la réponse a changé. Aucun redémarrage.
 
+Votre contrat est aussi rendu en lecture sur `http://localhost:4011` (Swagger UI) :
+la vue lisible du même `openapi.yaml`, utile pour relire vos opérations sans rouvrir
+le YAML. Elle aussi se met à jour au rechargement de la page, sans redémarrage.
+
 ## Le fichier
 
 Tout se passe dans **`openapi.yaml`**. Il est découpé en deux :
@@ -71,7 +75,9 @@ pas la déclaration qui est en trop.
 
 ## La boucle de travail
 
-Écrire une opération, la rejouer dans Bruno, regarder ce qui sort. Puis la suivante.
+Écrire une opération, la rejouer dans Bruno (ou Prism/curl), regarder ce qui sort.
+Swagger UI (`:4011`) donne la vue lisible du contrat pendant que vous l'écrivez —
+utile pour relire une opération sans rouvrir le YAML. Puis la suivante.
 
 Vous pouvez importer `openapi.yaml` dans Bruno pour générer votre collection : vos
 requêtes viennent de votre propre contrat.
