@@ -230,7 +230,8 @@ paths:
       tags: [Decouverte]
       operationId: searchCities
       summary: Rechercher une ville desservie par le reseau.
-      description: 
+      description: Filtre les villes desservies sur leur nom, à mesure de la saisie.
+        Chaque ville du réseau dispose d'une catapulte unique en son centre.
       security: []
       parameters:
         - name: q
