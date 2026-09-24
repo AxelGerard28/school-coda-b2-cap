@@ -83,3 +83,8 @@ Vous pouvez importer `openapi.yaml` dans Bruno pour générer votre collection :
 requêtes viennent de votre propre contrat.
 
 N'écrivez pas les douze opérations avant de tester la première.
+
+## Utilisation ia 
+
+L'ia a été utilisée pour réaliser ce travail, notamment au debut afin de bien commencer, elle m'a aider a bien me diriger dans mon travail en m'expliqaunt certains petits details, et à la fin afin de verifier mon travail et me conseiller sur des choses a changer ou meme me dire certaines mauvaises pratiques que j'ai pu faire.
+

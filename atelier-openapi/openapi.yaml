@@ -224,14 +224,15 @@ paths:
   #   Rechercher une ville desservie, par filtre textuel.
   #   Chaque ville du réseau possède une catapulte unique en son centre.
   #   Opération PUBLIQUE : on cherche sans être connecté.
-  # 
+  #
   /cities:
     get:
-      tags: [Decouverte]
+      tags: [Découverte]
       operationId: searchCities
       summary: Rechercher une ville desservie par le reseau.
-      description: Filtre les villes desservies sur leur nom, à mesure de la saisie.
-        Chaque ville du réseau dispose d'une catapulte unique en son centre.
+      description: |
+          Filtre les villes desservies sur leur nom, à mesure de la saisie.
+          Chaque ville du réseau dispose d'une catapulte unique en son centre.
       security: []
       parameters:
         - name: q
@@ -251,26 +252,95 @@ paths:
             example: 5
       responses:
         '200':
-          description: 
+          description: Liste des villes correspondante au filtre
           content:
             application/json:
               schema:
-                $ref: '#components/schema/city'
-              
-      
-      
-
+                type: array
+                items:
+                  $ref: '#/components/schemas/City'
 
   # POST /trips/search
   #   Rechercher les lancers reliant deux villes à une date donnée, pour un
   #   nombre de places. Tous les lancers sont directs : aucune correspondance,
   #   aucun itinéraire composé. Sans lancer direct ce jour-là, la liste est vide.
   #   Opération PUBLIQUE.
+  /trips/search:
+    post:
+      tags: [Découverte]
+      operationId: searchTrips
+      summary: Rechercher un lancé
+      description: |
+        Recherche les lancers reliant directement deux villes à une date donnée.
+        Tous les lancers sont directs. Sans lancer disponible ce jour-là, la liste
+        retournée est vide.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [origin, destination, date, passengers]
+              properties:
+                origin:
+                  type: string
+                  example: dijon
+                destination:
+                  type: string
+                  example: sens
+                date:
+                  type: string
+                  format: date
+                  example: '2027-04-12'
+                passengers:
+                  type: integer
+                  minimum: 1
+                  example: 2
+      responses:
+        '200':
+          description: Liste des lancers correspondants a la recherche
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TripSummary'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+
+
 
   # GET /trips/{id}
   #   Consulter le détail d'un lancer. Le détail porte ce qu'une liste de
   #   résultats n'a aucune raison de transporter pour chacune de ses lignes.
   #   Opération PUBLIQUE.
+  /trips/{id}:
+    get:
+      tags: [Découverte]
+      operationId: getTripById
+      summary: Consulter le detail d'un lancer
+      description: |
+        Retourne le détail complet d'un lancer.
+      security: []
+      parameters:
+        - name: id
+          in: path
+          description: Identifiant unique du lancer.
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+      responses:
+        '200':
+          description: Détail complet du lancer.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripDetail'
+        '404': { $ref: '#/components/responses/NotFound' }
 
   # ---- Panier (authentifié) ------------------------------------------------
 
@@ -533,32 +603,144 @@ components:
     #   centre, qui sert à la fois de point de lancement et de réception.
     City:
       type: object
-      description: Une ville desservie par le reseau, 
-        chaque ville a une catapulte en son centre.
+      description: Une ville desservie. Chaque ville possède une catapulte unique en son
+       centre, qui sert à la fois de point de lancement et de réception.
       required: [id, name]
-      properties: 
+      properties:
         id:
           type: string
           example: dijon
         name:
           type: string
           example: Dijon
-    
+
 
     # TripSummary
     #   Un lancer tel qu'il apparaît dans une liste de résultats : de quoi
     #   choisir, pas de quoi préparer son voyage.
-
+    TripSummary:
+      type: object
+      description: Résumé des lancé dans la liste des resultats
+      required: [id, origin, destination, departureTime, duration,price]
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 7f8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c
+        origin:
+          $ref: '#/components/schemas/City'
+        destination:
+          $ref: '#/components/schemas/City'
+        departureTime:
+          description: Heure de départ du trajet
+          type: string
+          format: date-time
+          example: '2027-04-12T08:30:00Z'
+        duration:
+          description: durée du trajet
+          type: integer
+          example: 12
+        price:
+          description: Prix du trajet par places
+          type: number
+          example: 45
     # TripDetail
     #   Le même lancer, consulté seul. Il ajoute ce dont on a besoin une fois
     #   qu'on l'a choisi — notamment la franchise de masse, qui n'est pas ici
     #   une limite commerciale mais balistique.
+    TripDetail:
+      description: Detail precis du trajet
+      allOf:
+        - $ref: '#/components/schemas/TripSummary'
+        - type: object
+          required: [weightLimit, catapultModel, instructions]
+          properties:
+            weightLimit:
+              description: La franchise de masse par voyageurs en kg
+              type: integer
+              example: 20
+            catapultModel:
+              description: Modele de la catapulte
+              type: string
+              example: Onagre M3
+            instructions:
+              description: Les consignes d'embarquement pour le lancement.
+              type: string
+              example: venir en avance
+
 
     # Cart
     #   Un panier de réservation. Il connaît son état, ses lignes, et son total.
+    Cart:
+      type: object
+      description: Panier presentant les reservations du voyageur avant paiement
+      required: [id, status, items, total, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 7f8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c
+        status:
+          description: status du panier, payé ou non
+          type: string
+          enum: [pending, paid]
+          example: pending
+        items:
+          description: liste des trajets réservé
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        total:
+          description: total du panier en euros
+          type: number
+          example: 232
+        createdAt:
+          description: date de creation du panier
+          type: string
+          format: date-time
+          example: '2027-04-12T08:30:00Z'
 
     # CartItem
     #   Une ligne de panier : un lancer et un nombre de places.
+    CartItem:
+      type: object
+      description: Ligne de reservation d'un trajet dans un panier
+      required: [id, trip, passengers, price]
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 7f8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c
+        trip:
+          $ref: '#/components/schemas/TripSummary'
+        passengers:
+          description: nombre de passagers pour cette ligne
+          type: integer
+          example: 2
+        price:
+          description: prix total pour une ligne
+          type: number
+          example: 108
 
     # Ticket
     #   Un droit à embarquer sur un lancer, émis au paiement. Un par place.
+    Ticket:
+      type: object
+      description: droit a embarquer sur un lancer, émis au paiement
+      required: [id, trip, price, date]
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 7f8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c
+        trip:
+          $ref: '#/components/schemas/TripSummary'
+        price:
+          description: prix du billet par personne
+          type: number
+          example: 54
+        date:
+          description: date et heure d'achat du billet
+          type: string
+          format: date-time
+          example: '2027-04-12T08:30:00Z'
